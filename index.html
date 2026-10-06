@@ -4,299 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#120a2a">
+<meta name="description" content="Nebulosa Roja: arcade espacial con Eco Temporal. Jugable sin internet e instalable como app.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nebulosa Roja">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Nebulosa Roja — Naves vs Aliens</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --void:#120a2a; --nebula:#2a1155; --ship:#5ef2ff; --alien:#ff4f8b; --gold:#ffd166; --text:#efe9ff; --dim:#a99bd6;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:var(--void);color:var(--text);font-family:"Chakra Petch",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-#wrap{position:relative;height:100%;width:100%}
-canvas{display:block;width:100%;height:100%}
-#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:12px 16px;pointer-events:none;font-weight:700}
-#score{font-size:28px;letter-spacing:.02em}
-#meta{text-align:right;font-size:14px;color:var(--dim);line-height:1.5}
-#lives{color:var(--ship);font-size:18px;letter-spacing:4px}
-#pauseBtn{pointer-events:auto;background:none;border:2px solid var(--dim);color:var(--text);border-radius:8px;width:38px;height:38px;font-size:16px;margin-top:6px;cursor:pointer}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at 50% 40%,rgba(42,17,85,.85),rgba(18,10,42,.96))}
-.hidden{display:none}
-h1{font-size:clamp(44px,13vw,92px);line-height:.9;font-weight:700;letter-spacing:-.02em;color:var(--alien);text-shadow:0 0 28px rgba(255,79,139,.55)}
-h1 small{display:block;font-size:.34em;color:var(--ship);letter-spacing:.08em;margin-top:10px;text-shadow:0 0 18px rgba(94,242,255,.5)}
-.screen p{color:var(--dim);max-width:34ch;margin:22px 0 8px;font-size:16px;line-height:1.5}
-.btn{margin-top:22px;font:inherit;font-weight:700;font-size:20px;color:var(--void);background:var(--ship);border:none;border-radius:999px;padding:14px 38px;cursor:pointer;box-shadow:0 0 30px rgba(94,242,255,.45)}
-.btn:focus-visible,#pauseBtn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-.big{font-size:56px;font-weight:700;color:var(--gold);margin-top:8px}
-.legend{display:flex;gap:18px;margin-top:20px;font-size:14px;color:var(--dim);flex-wrap:wrap;justify-content:center}
-.legend span b{color:var(--gold)}
-#banner{position:absolute;top:38%;left:0;right:0;text-align:center;font-size:36px;font-weight:700;color:var(--gold);pointer-events:none;opacity:0;transition:opacity .4s;text-shadow:0 0 20px rgba(255,209,102,.6)}
-@media (prefers-reduced-motion: reduce){#banner{transition:none}}
-</style>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="wrap">
-  <canvas id="c"></canvas>
+  <canvas id="c" aria-label="Campo de juego"></canvas>
   <div id="hud" class="hidden">
-    <div><div id="score">0</div><div id="lives"></div></div>
-    <div id="meta"><div id="wave">Oleada 1</div><div id="best">Récord 0</div><button id="pauseBtn" aria-label="Pausar">❚❚</button></div>
+    <div class="hud-l"><div id="score">0</div><div id="lives" aria-label="Vidas"></div><div id="combo"></div></div>
+    <div class="hud-r"><div id="lvl">Sector 1 · 1/3</div><div id="coins">0</div><button id="pauseBtn" aria-label="Pausar">❚❚</button></div>
   </div>
-  <div id="banner"></div>
-
-  <div id="start" class="screen">
-    <h1>Nebulosa Roja<small>La flota alien ya cruzó la órbita</small></h1>
-    <p>Arrastra el dedo para mover tu nave; dispara sola. En teclado: flechas o A/D para moverte y espacio para disparar.</p>
-    <div class="legend"><span><b>T</b> triple disparo</span><span><b>E</b> escudo</span><span><b>+</b> vida extra</span></div>
-    <button class="btn" id="playBtn">Despegar</button>
+  <div id="pw" class="hidden"></div>
+  <div id="tip" class="hidden"></div>
+  <div id="banner"><b></b><span></span></div>
+  <div id="btns" class="hidden">
+    <button id="bombBtn" class="rbtn bomb" aria-label="Bomba"><i>💥</i><span id="bombN">1</span></button>
+    <button id="ecoBtn" class="rbtn eco" aria-label="Eco Temporal"><i>◔</i><em>ECO</em></button>
   </div>
-
-  <div id="paused" class="screen hidden">
-    <h1 style="font-size:56px">Pausa</h1>
-    <button class="btn" id="resumeBtn">Continuar</button>
-  </div>
-
-  <div id="over" class="screen hidden">
-    <h1 style="font-size:clamp(40px,11vw,72px)">Nave destruida</h1>
-    <div class="big" id="finalScore">0</div>
-    <p id="overMsg"></p>
-    <button class="btn" id="againBtn">Volver a despegar</button>
-  </div>
+  <div id="ecoBar" class="hidden"><div id="ecoFill"></div></div>
+  <div id="screens"><div class="screen center"><h1 class="logo">NEBULOSA<br>ROJA</h1><p class="dim">Cargando…</p></div></div>
+  <noscript><div class="screen center"><p>Este juego necesita JavaScript.</p></div></noscript>
 </div>
-
-<script>
-(()=>{
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-let W=0,H=0,DPR=1;
-function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
-window.addEventListener('resize',resize);resize();
-
-const $=id=>document.getElementById(id);
-const C={ship:'#5ef2ff',alien:'#ff4f8b',alien2:'#b26bff',alien3:'#ff9a3c',gold:'#ffd166',text:'#efe9ff'};
-let best=0;try{best=+localStorage.getItem('nebulosa_best')||0}catch(e){}
-$('best').textContent='Récord '+best;
-
-// ---------- Sonido ----------
-let ac=null;
-function beep(f,d,type='square',v=.05,slide=0){
-  try{ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)();
-    const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;
-    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),ac.currentTime+d);
-    g.gain.value=v;g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);
-    o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);
-  }catch(e){}
-}
-
-// ---------- Estrellas ----------
-const stars=[];for(let i=0;i<140;i++)stars.push({x:Math.random(),y:Math.random(),z:Math.random()*.9+.1});
-
-// ---------- Estado ----------
-let state='menu',player,bullets,eBullets,enemies,parts,powers,score,lives,wave,shake,waveTimer,lastT=0,fireCd=0,boss=null;
-const keys={};
-function reset(){
-  player={x:W/2,y:H-90,w:34,h:40,tx:W/2,ty:H-90,triple:0,shield:0,inv:0};
-  bullets=[];eBullets=[];enemies=[];parts=[];powers=[];score=0;lives=3;wave=0;shake=0;boss=null;
-  nextWave();
-}
-function banner(t){const b=$('banner');b.textContent=t;b.style.opacity=1;clearTimeout(banner.t);banner.t=setTimeout(()=>b.style.opacity=0,1400);}
-function nextWave(){
-  wave++;$('wave').textContent='Oleada '+wave;
-  if(wave%5===0){
-    boss={x:W/2,y:-80,w:120,h:70,hp:40+wave*8,max:40+wave*8,t:0,cd:1};
-    banner('¡Nave nodriza!');beep(110,.8,'sawtooth',.08,-60);return;
-  }
-  banner('Oleada '+wave);
-  const cols=Math.min(4+Math.floor(wave/2),Math.max(4,Math.floor(W/60))),rows=Math.min(2+Math.floor(wave/3),5);
-  const gap=Math.min(56,(W-40)/cols);
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-    const type=r===0&&wave>2?2:(r%2===1&&wave>1?1:0);
-    enemies.push({type,bx:(W-gap*(cols-1))/2+c*gap,by:70+r*48,x:0,y:-60-r*40,w:30,h:24,hp:type===2?3:type===1?2:1,t:Math.random()*6,phase:c*.4,dive:null,entry:1});
-  }
-}
-
-// ---------- Controles ----------
-let touching=false,offX=0,offY=0;
-cv.addEventListener('pointerdown',e=>{if(state!=='play')return;touching=true;offX=player.x-e.clientX;offY=player.y-e.clientY;});
-window.addEventListener('pointermove',e=>{if(!touching)return;player.tx=e.clientX+offX;player.ty=e.clientY+offY;});
-window.addEventListener('pointerup',()=>touching=false);
-window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' ')e.preventDefault();if((e.key==='p'||e.key==='Escape')&&(state==='play'||state==='pause'))togglePause();});
-window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-
-function show(id){['start','paused','over'].forEach(s=>$(s).classList.toggle('hidden',s!==id));}
-function start(){resize();reset();state='play';show(null);$('hud').classList.remove('hidden');updLives();beep(440,.15,'triangle',.06,400);}
-function togglePause(){if(state==='play'){state='pause';show('paused');}else if(state==='pause'){state='play';show(null);lastT=performance.now();}}
-$('playBtn').onclick=start;$('againBtn').onclick=start;$('resumeBtn').onclick=togglePause;$('pauseBtn').onclick=togglePause;
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')togglePause();});
-
-function updLives(){$('lives').textContent='▲'.repeat(Math.max(0,lives));}
-function addScore(n){score+=n;$('score').textContent=score;}
-
-// ---------- Efectos ----------
-function boom(x,y,col,n=18,sp=220){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=Math.random()*sp;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.5,col});}}
-function hit(a,b){return Math.abs(a.x-b.x)<(a.w+b.w)/2&&Math.abs(a.y-b.y)<(a.h+b.h)/2;}
-
-function hurtPlayer(){
-  if(player.inv>0||lives<=0)return;
-  if(player.shield>0){player.shield=0;player.inv=.6;boom(player.x,player.y,C.ship,14);beep(300,.2,'triangle');return;}
-  lives--;updLives();boom(player.x,player.y,C.ship,40,320);shake=14;beep(80,.5,'sawtooth',.1,-40);
-  player.inv=2;player.triple=0;
-  if(lives<=0)gameOver();
-}
-function gameOver(){
-  state='over';$('finalScore').textContent=score;
-  let msg='Llegaste a la oleada '+wave+'.';
-  if(score>best){best=score;try{localStorage.setItem('nebulosa_best',best)}catch(e){}msg='¡Nuevo récord! Llegaste a la oleada '+wave+'.';}
-  $('best').textContent='Récord '+best;$('overMsg').textContent=msg;
-  setTimeout(()=>{show('over');$('hud').classList.add('hidden');},700);
-}
-
-// ---------- Bucle ----------
-function update(dt){
-  // jugador
-  const sp=420;
-  if(keys['arrowleft']||keys['a'])player.tx=player.x-sp*dt*3;
-  if(keys['arrowright']||keys['d'])player.tx=player.x+sp*dt*3;
-  if(keys['arrowup']||keys['w'])player.ty=player.y-sp*dt*3;
-  if(keys['arrowdown']||keys['s'])player.ty=player.y+sp*dt*3;
-  player.tx=Math.max(20,Math.min(W-20,player.tx));player.ty=Math.max(H*.45,Math.min(H-40,player.ty));
-  player.x+=(player.tx-player.x)*Math.min(1,dt*14);player.y+=(player.ty-player.y)*Math.min(1,dt*14);
-  player.inv=Math.max(0,player.inv-dt);player.triple=Math.max(0,player.triple-dt);player.shield=Math.max(0,player.shield-dt);
-
-  // disparo automático (táctil) o con espacio
-  fireCd-=dt;
-  const auto=matchMedia('(pointer:coarse)').matches||keys[' '];
-  if(auto&&fireCd<=0&&lives>0){
-    fireCd=.16;
-    bullets.push({x:player.x,y:player.y-22,vx:0,vy:-720,w:4,h:14});
-    if(player.triple>0){bullets.push({x:player.x-8,y:player.y-16,vx:-160,vy:-680,w:4,h:14},{x:player.x+8,y:player.y-16,vx:160,vy:-680,w:4,h:14});}
-    beep(880,.05,'square',.02,-300);
-  }
-  bullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt;});bullets=bullets.filter(b=>b.y>-20&&b.x>-20&&b.x<W+20);
-  eBullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt;});eBullets=eBullets.filter(b=>b.y<H+20);
-
-  // enemigos
-  const diveChance=.15+wave*.05;
-  enemies.forEach(e=>{
-    e.t+=dt;
-    const fx=e.bx+Math.sin(e.t*1.2+e.phase)*30,fy=e.by+Math.sin(e.t*2+e.phase)*6;
-    if(e.dive){
-      e.dive.t+=dt;e.x+=e.dive.vx*dt;e.y+=e.dive.vy*dt;e.dive.vx+=(player.x-e.x)*dt*1.5;
-      if(e.y>H+40){e.dive=null;e.y=-40;e.entry=1;}
-    }else if(e.entry){
-      e.x+= (fx-e.x)*dt*3; e.y+=(fy-e.y)*dt*3; if(Math.abs(fy-e.y)<2)e.entry=0;
-    }else{
-      e.x=fx;e.y=fy;
-      if(e.type===1&&Math.random()<diveChance*dt*.4){e.dive={t:0,vx:0,vy:260+wave*12};beep(500,.3,'sine',.03,-300);}
-    }
-    if(!e.entry&&Math.random()<(e.type===2?.6:.12+wave*.015)*dt){
-      const a=Math.atan2(player.y-e.y,player.x-e.x),s=200+wave*8;
-      eBullets.push({x:e.x,y:e.y+10,vx:e.type===2?Math.cos(a)*s:0,vy:e.type===2?Math.sin(a)*s:s,w:6,h:10});
-    }
-    if(hit(e,player)){e.hp=0;hurtPlayer();}
-  });
-
-  // jefe
-  if(boss){
-    boss.t+=dt;boss.y+=(110-boss.y)*dt*1.5;boss.x=W/2+Math.sin(boss.t*.8)*(W/2-80);
-    boss.cd-=dt;
-    if(boss.cd<=0){boss.cd=Math.max(.45,1.2-wave*.03);
-      for(let i=-2;i<=2;i++){const a=Math.PI/2+i*.25;eBullets.push({x:boss.x,y:boss.y+30,vx:Math.cos(a)*230,vy:Math.sin(a)*230,w:7,h:7});}
-      beep(150,.15,'sawtooth',.03);
-    }
-  }
-
-  // colisiones de balas
-  bullets.forEach(b=>{
-    for(const e of enemies){if(e.hp>0&&hit(b,e)){e.hp--;b.y=-99;if(e.hp<=0){addScore([100,150,250][e.type]*(e.dive?2:1));boom(e.x,e.y,[C.alien,C.alien2,C.alien3][e.type]);beep(220,.18,'square',.04,-150);shake=Math.max(shake,3);
-      if(Math.random()<.08)powers.push({x:e.x,y:e.y,w:22,h:22,k:['T','E','+'][Math.random()<.45?0:Math.random()<.7?1:2]});}else{boom(e.x,e.y,'#fff',4,80);}break;}}
-    if(boss&&b.y>-50&&hit(b,boss)){boss.hp--;b.y=-99;boom(b.x,b.y,C.gold,3,90);
-      if(boss.hp<=0){addScore(2000+wave*200);for(let i=0;i<5;i++)boom(boss.x+(Math.random()-.5)*100,boss.y+(Math.random()-.5)*50,i%2?C.gold:C.alien,30,340);shake=20;beep(60,1,'sawtooth',.12,-30);
-        powers.push({x:boss.x,y:boss.y,w:22,h:22,k:'+'});boss=null;}}
-  });
-  enemies=enemies.filter(e=>e.hp>0);
-  eBullets.forEach(b=>{if(hit(b,{x:player.x,y:player.y,w:18,h:24})){b.y=H+99;hurtPlayer();}});
-
-  // potenciadores
-  powers.forEach(p=>{p.y+=110*dt;if(hit(p,player)){p.y=H+99;beep(660,.25,'triangle',.06,500);
-    if(p.k==='T'){player.triple=10;banner('Triple disparo');}else if(p.k==='E'){player.shield=12;banner('Escudo activo');}else{lives=Math.min(5,lives+1);updLives();banner('Vida extra');}}});
-  powers=powers.filter(p=>p.y<H+30);
-
-  parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.96;p.vy*=.96;p.life-=dt;});parts=parts.filter(p=>p.life>0);
-  shake=Math.max(0,shake-dt*30);
-
-  if(state==='play'&&enemies.length===0&&!boss){waveTimer=(waveTimer||0)+dt;if(waveTimer>1.2){waveTimer=0;nextWave();}}
-}
-
-// ---------- Dibujo ----------
-function drawShip(x,y){
-  ctx.save();ctx.translate(x,y);
-  ctx.fillStyle='rgba(94,242,255,.25)';ctx.beginPath();ctx.ellipse(0,24,6,10+Math.random()*6,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=C.gold;ctx.beginPath();ctx.moveTo(-6,16);ctx.lineTo(0,26+Math.random()*6);ctx.lineTo(6,16);ctx.fill();
-  ctx.fillStyle=C.ship;ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(8,-4);ctx.lineTo(18,10);ctx.lineTo(18,18);ctx.lineTo(6,12);ctx.lineTo(-6,12);ctx.lineTo(-18,18);ctx.lineTo(-18,10);ctx.lineTo(-8,-4);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#120a2a';ctx.beginPath();ctx.ellipse(0,-4,3.5,7,0,0,Math.PI*2);ctx.fill();
-  ctx.restore();
-}
-function drawAlien(e){
-  const col=[C.alien,C.alien2,C.alien3][e.type];ctx.save();ctx.translate(e.x,e.y);
-  const f=Math.sin(e.t*8)>0?1:-1;ctx.fillStyle=col;
-  if(e.type===0){ // medusa
-    ctx.beginPath();ctx.arc(0,-2,13,Math.PI,0);ctx.lineTo(13,6);for(let i=0;i<4;i++){ctx.lineTo(9-i*6,6+(i%2?4:8)*f*.5+4);ctx.lineTo(6-i*6,6);}ctx.closePath();ctx.fill();
-  }else if(e.type===1){ // cangrejo
-    ctx.fillRect(-11,-8,22,14);ctx.fillRect(-16,-2+f*2,5,10);ctx.fillRect(11,-2-f*2,5,10);ctx.fillRect(-8,6,4,6);ctx.fillRect(4,6,4,6);ctx.fillRect(-6,-13,3,5);ctx.fillRect(3,-13,3,5);
-  }else{ // ojo
-    ctx.beginPath();ctx.moveTo(-16,0);ctx.quadraticCurveTo(0,-18,16,0);ctx.quadraticCurveTo(0,18,-16,0);ctx.fill();
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fill();
-    const a=Math.atan2(player.y-e.y,player.x-e.x);ctx.fillStyle='#120a2a';ctx.beginPath();ctx.arc(Math.cos(a)*3,Math.sin(a)*3,3,0,Math.PI*2);ctx.fill();
-  }
-  if(e.type!==2){ctx.fillStyle='#120a2a';ctx.fillRect(-6,-5,4,4);ctx.fillRect(2,-5,4,4);}
-  ctx.restore();
-}
-function drawBoss(b){
-  ctx.save();ctx.translate(b.x,b.y);
-  ctx.fillStyle=C.alien2;ctx.beginPath();ctx.ellipse(0,0,60,22,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=C.alien;ctx.beginPath();ctx.arc(0,-8,26,Math.PI,0);ctx.fill();
-  for(let i=-2;i<=2;i++){ctx.fillStyle=Math.sin(b.t*6+i)>0?C.gold:'#120a2a';ctx.beginPath();ctx.arc(i*22,4,4,0,Math.PI*2);ctx.fill();}
-  ctx.restore();
-  const bw=Math.min(260,W-60);ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect((W-bw)/2,64,bw,6);
-  ctx.fillStyle=C.alien;ctx.fillRect((W-bw)/2,64,bw*b.hp/b.max,6);
-}
-let menuT=0;
-function draw(dt){
-  ctx.save();
-  if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
-  const g=ctx.createRadialGradient(W*.7,H*.25,0,W*.7,H*.25,Math.max(W,H));g.addColorStop(0,'#2a1155');g.addColorStop(1,'#120a2a');
-  ctx.fillStyle=g;ctx.fillRect(-20,-20,W+40,H+40);
-  stars.forEach(s=>{s.y+=s.z*dt*.12;if(s.y>1)s.y=0;ctx.fillStyle=`rgba(239,233,255,${s.z})`;ctx.fillRect(s.x*W,s.y*H,s.z*2,s.z*2);});
-
-  if(state==='menu'){menuT+=dt;ctx.restore();return;}
-
-  bullets.forEach(b=>{ctx.fillStyle=C.ship;ctx.fillRect(b.x-2,b.y-7,4,14);});
-  eBullets.forEach(b=>{ctx.fillStyle=C.alien;ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();});
-  enemies.forEach(drawAlien);
-  if(boss)drawBoss(boss);
-  powers.forEach(p=>{ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,11,0,Math.PI*2);ctx.stroke();ctx.fillStyle=C.gold;ctx.font='700 13px "Chakra Petch",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.k,p.x,p.y+1);});
-  parts.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.col;ctx.fillRect(p.x-1.5,p.y-1.5,3,3);});ctx.globalAlpha=1;
-  if(lives>0&&(player.inv<=0||Math.floor(player.inv*12)%2)){drawShip(player.x,player.y);
-    if(player.shield>0){ctx.strokeStyle=`rgba(255,209,102,${.4+Math.sin(performance.now()/120)*.2})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(player.x,player.y,30,0,Math.PI*2);ctx.stroke();}}
-  ctx.restore();
-}
-function loop(t){
-  const dt=Math.min(.033,(t-lastT)/1000||0);lastT=t;
-  if(state==='play'||state==='over')update(dt);
-  if(state!=='pause')draw(dt);
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-})();
-</script>
-<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>
