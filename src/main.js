@@ -13,7 +13,7 @@ const ui = new UI({ game, save: sv, audio });
 function layout() {
   const aw = innerWidth, ah = innerHeight, bw = Math.min(aw, ah * .75), bh = Math.min(ah, bw / .42);
   wrap.style.width = bw + 'px'; wrap.style.height = bh + 'px';
-  document.documentElement.style.fontSize = Math.max(12, Math.min(21, bw / 30)) + 'px';
+  document.documentElement.style.fontSize = Math.max(11, Math.min(22, bw / 28, bh / 47)) + 'px';
   game.resize(bw, bh);
 }
 addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 200)); layout();

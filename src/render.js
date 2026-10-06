@@ -41,7 +41,7 @@ export function render(g, dt) {
     const d = POWER[w.k], r = 13 + Math.sin(w.t * 6) * 1.5;
     ctx.globalCompositeOperation = 'lighter'; glow(ctx, d[1], w.x, w.y, 26, .8); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     ctx.fillStyle = 'rgba(10,6,30,.85)'; ctx.beginPath(); ctx.arc(w.x, w.y, r, 0, TAU); ctx.fill(); ctx.strokeStyle = d[1]; ctx.lineWidth = 2.5; ctx.stroke();
-    ctx.fillStyle = d[1]; ctx.font = '700 14px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(w.k === 'X' ? '2×' : w.k, w.x, w.y + 1);
+    ctx.fillStyle = d[1]; ctx.font = '700 15px Rajdhani,system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(w.k === 'X' ? '2×' : w.k, w.x, w.y + 1);
   }
   // balas enemigas
   for (const b of g.ebullets) {
@@ -73,12 +73,12 @@ export function render(g, dt) {
   for (const q of g.parts) { ctx.globalAlpha = Math.max(0, Math.min(1, q.life * 1.6)); ctx.fillStyle = q.col; ctx.fillRect(q.x - q.sz / 2, q.y - q.sz / 2, q.sz, q.sz); }
   for (const r of g.rings) { ctx.globalAlpha = Math.max(0, r.life * 2); ctx.strokeStyle = r.col; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, TAU); ctx.stroke(); }
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-  for (const x of g.texts) { ctx.globalAlpha = Math.max(0, x.life); ctx.fillStyle = x.col; ctx.font = '700 15px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(x.txt, x.x, x.y); } ctx.globalAlpha = 1;
+  for (const x of g.texts) { ctx.globalAlpha = Math.max(0, x.life); ctx.fillStyle = x.col; ctx.font = '700 17px Rajdhani,system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(x.txt, x.x, x.y); } ctx.globalAlpha = 1;
   // joystick
   if (g.stick.on) { const s = g.stick; ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s.ox, s.oy, 55, 0, TAU); ctx.stroke(); ctx.fillStyle = 'rgba(94,242,255,.35)'; ctx.beginPath(); ctx.arc(s.ox + s.dx * 55, s.oy + s.dy * 55, 22, 0, TAU); ctx.fill(); }
   // barra del jefe
   if (g.boss) { const b = g.boss, bw = Math.min(360, W - 60), x = (W - bw) / 2, y = 84; ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x - 2, y - 2, bw + 4, 12); ctx.fillStyle = b.def.col; ctx.fillRect(x, y, bw * Math.max(0, b.hp) / b.max, 8);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = '700 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(b.def.name, W / 2, y + 24);
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = '700 12px Orbitron,Rajdhani,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(b.def.name, W / 2, y + 24);
     if (b.id === 'emperor') { ctx.fillStyle = 'rgba(0,0,0,.6)'; [.33, .66].forEach(m => ctx.fillRect(x + bw * m - 1, y, 2, 8)); } }
   ctx.restore();
 }
@@ -101,4 +101,24 @@ function drawBoss(g, ctx) {
   if (b.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .7; ctx.drawImage(sp, -w / 2, -h / 2, w, h); }
   ctx.restore(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
 }
-function drawMenuShip(g, ctx, H) { /* en el menú sólo se ve el fondo; el logotipo lo pone el DOM */ }
+function drawMenuShip(g, ctx, H) {
+  // Escena del menú: planeta rojo con atmósfera y aliens lejanos cruzando.
+  const W = 480, t = g.t, pr = W * .62, px = W * .86, py = H * .9;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter'; glow(ctx, '#ff3b6a', px - pr * .1, py - pr * .15, pr * 1.55, .35);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  const pg = ctx.createRadialGradient(px - pr * .45, py - pr * .5, pr * .1, px, py, pr);
+  pg.addColorStop(0, '#ff9a5a'); pg.addColorStop(.35, '#d6304a'); pg.addColorStop(.75, '#5a0f3a'); pg.addColorStop(1, '#14061c');
+  ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.clip();
+  ctx.globalAlpha = .12; ctx.fillStyle = '#2a0620'; for (let i = 0; i < 7; i++) ctx.fillRect(px - pr, py - pr * .9 + i * pr * .26 + Math.sin(t * .2 + i) * 4, pr * 2, pr * .1);
+  ctx.restore(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(255,170,150,.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, pr, Math.PI * 1.02, Math.PI * 1.5); ctx.stroke();
+  // aliens lejanos cruzando
+  for (let i = 0; i < 4; i++) {
+    const k = (t * (.018 + i * .006) + i * .27) % 1, x = -40 + k * (W + 80), y = H * (.12 + i * .075) + Math.sin(t * 1.3 + i * 2) * 10;
+    ctx.globalAlpha = .28; const s = enemySprite(i % 3 === 2 ? 4 : i % 3, Math.sin(t * 6 + i) > 0 ? 1 : 0), z = 34 + i * 5; ctx.drawImage(s, x - z / 2, y - z / 2, z, z);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
