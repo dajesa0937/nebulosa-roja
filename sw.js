@@ -1,6 +1,6 @@
 // Service worker: juego 100% offline tras la primera carga.
 // Sube VERSION cada vez que publiques cambios para que los jugadores reciban la actualización.
-const VERSION = 'nebulosa-roja-v2.1.0';
+const VERSION = 'nebulosa-roja-v2.2.0';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './src/main.js', './src/config.js', './src/data.js', './src/storage.js', './src/audio.js', './src/sprites.js',

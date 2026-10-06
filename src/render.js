@@ -1,5 +1,5 @@
 // Dibujo del campo de juego. Todo con sprites pre-renderizados + mezcla aditiva para brillos.
-import { shipSprite, enemySprite, bossSprite, glowSprite } from './sprites.js';
+import { shipSprite, enemySprite, bossSprite, glowSprite, SHIP_ENGINES, BOSS_CORES } from './sprites.js';
 import { POWER } from './data.js';
 const TAU = Math.PI * 2;
 function glow(ctx, color, x, y, r, a = 1) { ctx.globalAlpha = a; const s = glowSprite(color, 32); ctx.drawImage(s, x - r, y - r, r * 2, r * 2); }
@@ -83,22 +83,31 @@ export function render(g, dt) {
   ctx.restore();
 }
 function drawPlayer(g, ctx, p, t) {
-  const sp = shipSprite(g.ship.id, g.shipColor), th = g.QC.glow;
-  ctx.save(); ctx.translate(p.x, p.y);
-  // llama del motor
-  const fl = 14 + Math.random() * 9 + (p.speedT > 0 ? 10 : 0);
-  ctx.globalCompositeOperation = 'lighter'; glow(ctx, p.speedT > 0 ? '#fff36a' : '#ffa23c', 0, 24, 22, .7);
-  ctx.fillStyle = '#ffd98a'; ctx.globalAlpha = .9; ctx.beginPath(); ctx.moveTo(-6, 16); ctx.lineTo(0, 16 + fl); ctx.lineTo(6, 16); ctx.fill(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  const id = g.ship.id, sp = shipSprite(id, g.shipColor), turbo = p.speedT > 0, eng = SHIP_ENGINES[id] || [[0, 24]];
+  const flameCol = id === 'plasma' ? g.shipColor : turbo ? '#fff36a' : '#ffa23c';
+  ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1.15, 1.15);
+  ctx.globalCompositeOperation = 'lighter';
+  for (const [ex, ey] of eng) {
+    const fl = (id === 'titan' ? 20 : 15) + Math.random() * 10 + (turbo ? 12 : 0), w = id === 'titan' ? 4.6 : 3.4;
+    glow(ctx, flameCol, ex, ey + 9, 20, .55);
+    ctx.globalAlpha = .55; ctx.fillStyle = flameCol; ctx.beginPath(); ctx.moveTo(ex - w - 1, ey); ctx.lineTo(ex, ey + fl * 1.15); ctx.lineTo(ex + w + 1, ey); ctx.fill();
+    ctx.globalAlpha = .95; ctx.fillStyle = '#fff4d6'; ctx.beginPath(); ctx.moveTo(ex - w * .6, ey); ctx.lineTo(ex, ey + fl * .7); ctx.lineTo(ex + w * .6, ey); ctx.fill();
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.drawImage(sp, -36, -36, 72, 72);
-  if (p.shield > 0) { const a = p.shield < 2 ? (Math.floor(t * 10) % 2 ? .2 : .6) : .55; ctx.strokeStyle = `rgba(110,190,255,${a})`; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 34, 0, TAU); ctx.stroke(); ctx.fillStyle = `rgba(90,168,255,${a * .22})`; ctx.fill(); }
+  if (p.shield > 0) { const a = p.shield < 2 ? (Math.floor(t * 10) % 2 ? .2 : .6) : .55; ctx.strokeStyle = `rgba(110,190,255,${a})`; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 36, 0, TAU); ctx.stroke(); ctx.fillStyle = `rgba(90,168,255,${a * .22})`; ctx.fill(); }
   ctx.restore();
 }
 function drawBoss(g, ctx) {
-  const b = g.boss, sp = bossSprite(b.id, b.def.col), w = 240, h = 140; ctx.save(); ctx.translate(b.x, b.y);
+  const b = g.boss, sp = bossSprite(b.id, b.def.col), w = 240, h = 140, t = g.t; ctx.save(); ctx.translate(b.x, b.y);
   if (b.dying > 0) ctx.translate((Math.random() - .5) * 6, (Math.random() - .5) * 6);
-  ctx.globalCompositeOperation = 'lighter'; glow(ctx, b.def.col, 0, 0, 120, .22 + Math.sin(g.t * 3) * .06); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'lighter'; glow(ctx, b.def.col, 0, 0, 125, .16 + Math.sin(t * 3) * .05); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   ctx.drawImage(sp, -w / 2, -h / 2, w, h);
-  if (b.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .7; ctx.drawImage(sp, -w / 2, -h / 2, w, h); }
+  // núcleos que pulsan más rápido en cada fase
+  ctx.globalCompositeOperation = 'lighter';
+  (BOSS_CORES[b.id] || []).forEach(([cx, cy, r, col], i) => { const k = .55 + .3 * Math.sin(t * (3 + b.ph * 1.6) + i * 1.7); glow(ctx, col, cx, cy, r * (1 + .1 * Math.sin(t * 5 + i)), k); });
+  if (b.id === 'mothership') for (let i = 0; i < 18; i++) { const a = t * 1.1 + i / 18 * TAU, s = Math.sin(a); if (s < 0) continue; const x = Math.cos(a) * 104, y = 12 + s * 15, on = Math.sin(t * 6 + i * 2) > -.3; glow(ctx, i % 2 ? '#ffd166' : '#6aeaff', x, y, on ? 7 : 4, on ? .95 : .35); }
+  if (b.flash > 0) { ctx.globalAlpha = .7; ctx.drawImage(sp, -w / 2, -h / 2, w, h); }
   ctx.restore(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
 }
 function drawMenuShip(g, ctx, H) {

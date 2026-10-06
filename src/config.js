@@ -2,6 +2,6 @@
 // (ver carpeta /server y docs/SERVIDOR.md). Con cadena vacía el juego es 100% offline.
 export const CONFIG = {
   API_URL: '',            // ej.: 'https://api.tudominio.com'
-  VERSION: '2.1.0',
+  VERSION: '2.2.0',
   LW: 480                 // ancho lógico del campo de juego
 };
